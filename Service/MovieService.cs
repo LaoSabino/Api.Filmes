@@ -7,7 +7,7 @@ namespace Api.Filmes.Service;
 
 public class MovieService(MoviesContext moviesContext) : IMovieService
 {
-    public async Task GetRangewAwardsAsync()
+    public async Task<object> GetRangewAwardsAsync()
     {
         var winners = await moviesContext.Movies.Where(m => m.Winner).ToListAsync();
 
@@ -27,11 +27,11 @@ public class MovieService(MoviesContext moviesContext) : IMovieService
             Max = producerAwards.Where(p => p.Interval == maxInterval?.Interval).Select(p => new { p.Producer, p.Interval, p.PreviousWin, p.FollowingWin }).ToList()
         };
 
-        //var result = new
-        //{
-        //    Min = producerAwards.Where(p => p.Interval == minInterval?.Interval).Select(p => new { p.Producer, p.Interval, p.PreviousWin, p.FollowingWin }).ToList(),
-        //    Max = producerAwards.Where(p => p.Interval == maxInterval?.Interval).Select(p => new { p.Producer, p.Interval, p.PreviousWin, p.FollowingWin }).ToList()
-        //};
+        return new
+        {
+            Min = producerAwards.Where(p => p.Interval == minInterval?.Interval).Select(p => new { p.Producer, p.Interval, p.PreviousWin, p.FollowingWin }).ToList(),
+            Max = producerAwards.Where(p => p.Interval == maxInterval?.Interval).Select(p => new { p.Producer, p.Interval, p.PreviousWin, p.FollowingWin }).ToList()
+        };
 
         //return result;
     }

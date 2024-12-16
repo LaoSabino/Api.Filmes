@@ -1,5 +1,6 @@
 using Api.Filmes.Infra;
 using Api.Filmes.Interfaces;
+using Api.Filmes.Service;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +10,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<MoviesContext>(options => options.UseInMemoryDatabase("MoviesDb"));
 builder.Services.AddSingleton<ICsvReaderService, CsvReaderService>();
+builder.Services.AddScoped<IMovieService, MovieService>();
 var app = builder.Build();
 
 StartProcessSaveData(app);
@@ -21,28 +23,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapGet("/producers", async (MoviesContext db) =>
+app.MapGet("/producers", async (IMovieService service) =>
 {
-    var winners = await db.Movies.Where(m => m.Winner).ToListAsync();
-
-    var producerAwards = winners.SelectMany(m => m.Producers.Split(',').Select(p =>
-    new { Producer = p.Trim(), m.Year })).GroupBy(pa => pa.Producer).Where(g => g.Count() > 1).Select(g => new
-    {
-        Producer = g.Key,
-        Intervals = g.OrderBy(pa => pa.Year).Select(pa => pa.Year).Zip(g.OrderBy(pa => pa.Year).Select(pa => pa.Year).Skip(1), (a, b) => new { Interval = b - a, PreviousWin = a, FollowingWin = b })
-    }).SelectMany(p => p.Intervals.Select(i => new
-    { p.Producer, i.Interval, i.PreviousWin, i.FollowingWin })).ToList();
-
-    var minInterval = producerAwards.Where(p => p.Interval > 0).OrderBy(p => p.Interval).FirstOrDefault();
-
-    var maxInterval = producerAwards.OrderByDescending(p => p.Interval).FirstOrDefault();
-
-    var result = new
-    {
-        Min = producerAwards.Where(p => p.Interval == minInterval?.Interval).Select(p => new { p.Producer, p.Interval, p.PreviousWin, p.FollowingWin }).ToList(),
-        Max = producerAwards.Where(p => p.Interval == maxInterval?.Interval).Select(p => new { p.Producer, p.Interval, p.PreviousWin, p.FollowingWin }).ToList()
-    };
-
+    var result = await service.GetRangewAwardsAsync();
     return Results.Ok(result);
 })
     .WithName("GetProducers").WithDescription("Intervalo de prêmios.")

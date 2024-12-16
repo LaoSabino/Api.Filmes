@@ -2,5 +2,5 @@
 
 public interface IMovieService
 {
-    Task GetRangewAwardsAsync();
+    Task<object> GetRangewAwardsAsync();
 }
