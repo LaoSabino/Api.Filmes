@@ -1,4 +1,5 @@
 using Api.Filmes.Infra;
+using Api.Filmes.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,17 +8,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<MoviesContext>(options => options.UseInMemoryDatabase("MoviesDb"));
-
+builder.Services.AddSingleton<ICsvReaderService, CsvReaderService>();
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var moviesParsed = CsvReaderService.ReadCsvFile(@"C:\\Users\laerc\source\repos\Api.Filmes\File\movielist.csv");
-    var dbContext = scope.ServiceProvider.GetRequiredService<MoviesContext>();
-    dbContext.Database.EnsureCreated();
-    dbContext.Movies.AddRange(moviesParsed);
-    dbContext.SaveChanges();
-}
+StartProcessSaveData(app);
 
 if (app.Environment.IsDevelopment())
 {
@@ -29,7 +23,6 @@ app.UseHttpsRedirection();
 
 app.MapGet("/producers", async (MoviesContext db) =>
 {
-    // var movies = await db.Movies.ToListAsync();
     var winners = await db.Movies.Where(m => m.Winner).ToListAsync();
 
     var producerAwards = winners.SelectMany(m => m.Producers.Split(',').Select(p =>
@@ -42,7 +35,9 @@ app.MapGet("/producers", async (MoviesContext db) =>
 
     var minInterval = producerAwards.Where(p => p.Interval > 0).OrderBy(p => p.Interval).FirstOrDefault();
 
-    var maxInterval = producerAwards.OrderByDescending(p => p.Interval).FirstOrDefault(); var result = new
+    var maxInterval = producerAwards.OrderByDescending(p => p.Interval).FirstOrDefault();
+
+    var result = new
     {
         Min = producerAwards.Where(p => p.Interval == minInterval?.Interval).Select(p => new { p.Producer, p.Interval, p.PreviousWin, p.FollowingWin }).ToList(),
         Max = producerAwards.Where(p => p.Interval == maxInterval?.Interval).Select(p => new { p.Producer, p.Interval, p.PreviousWin, p.FollowingWin }).ToList()
@@ -50,9 +45,19 @@ app.MapGet("/producers", async (MoviesContext db) =>
 
     return Results.Ok(result);
 })
-    .WithName("GetProducers")
+    .WithName("GetProducers").WithDescription("Intervalo de prêmios.")
     .Produces(StatusCodes.Status200OK);
 
 app.Run();
 
-
+static void StartProcessSaveData(WebApplication app)
+{
+    using var scope = app.Services.CreateScope();
+    var csvFilePath = Path.Combine(Directory.GetCurrentDirectory(), "File", "movielist.csv");
+    var readService = scope.ServiceProvider.GetRequiredService<ICsvReaderService>();
+    var moviesParsed = readService.ReadCsvFile(csvFilePath);
+    var dbContext = scope.ServiceProvider.GetRequiredService<MoviesContext>();
+    dbContext.Database.EnsureCreated();
+    dbContext.Movies.AddRange(moviesParsed);
+    dbContext.SaveChanges();
+}

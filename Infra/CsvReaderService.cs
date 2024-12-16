@@ -1,11 +1,12 @@
 ﻿using System.Globalization;
+using Api.Filmes.Interfaces;
 using Api.Filmes.Model;
 
 namespace Api.Filmes.Infra;
 
-public static class CsvReaderService
+public class CsvReaderService : ICsvReaderService
 {
-    public static List<Movie> ReadCsvFile(string filePath)
+    public List<Movie> ReadCsvFile(string filePath)
     {
         var movies = new List<Movie>();
         using var reader = new StreamReader(filePath);
