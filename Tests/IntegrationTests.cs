@@ -7,35 +7,17 @@ using Xunit;
 
 namespace Api.Filmes.Tests;
 
-//public class IntegrationTests : IClassFixture<WebApplicationFactory<Program>>
-//{
-//    private readonly HttpClient _client;
-//    public IntegrationTests(WebApplicationFactory<Program> factory)
-//    {
-//        _client = factory.CreateClient();
-//    }
-
-//    [Fact]
-//    public async Task TestGetProducers()
-//    {
-//        var response = await _client.GetAsync("/producers"); response.EnsureSuccessStatusCode();
-//        var result = await response.Content.ReadFromJsonAsync<object>();
-//        Assert.NotNull(result);
-//    }
-//}
 public class IntegrationTests
 {
     [Fact]
     public void StartProcessSaveData_ShouldPopulateDatabase_WhenCsvIsValid()
     {
-        // Arrange
         var options = new DbContextOptionsBuilder<MoviesContext>()
             .UseInMemoryDatabase(databaseName: "MoviesTestDb")
             .Options;
 
         var mockCsvReaderService = new Mock<ICsvReaderService>();
 
-        // Simular os dados lidos do CSV
         var mockMovies = new List<Movie>
         {
             new(1,1982,"Filme1","Studio1","Producer1",true),
